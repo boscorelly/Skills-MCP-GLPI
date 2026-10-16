@@ -201,10 +201,13 @@ async def mcp_handler_http(request: Request, mcp_request: MCPRequest) -> MCPResp
         return _rate_limited_response(mcp_request, exc)
 
     # Extrair user_token do header do cliente MCP (cada usuário envia seu próprio token)
-    user_token = headers_dict.get("x-glpi-user-token", "")
+    # Fallback para GLPI_USER_TOKEN do .env quando o header não está presente
+    user_token = headers_dict.get("x-glpi-user-token", "") or settings.glpi_user_token
     session_manager.set_current_user_token(user_token)
-    if user_token:
-        logger.debug(f"USER TOKEN ENCONTRADO: {user_token[:10]}...")
+    if user_token and headers_dict.get("x-glpi-user-token"):
+        logger.debug(f"USER TOKEN ENCONTRADO (header): {user_token[:10]}...")
+    elif user_token:
+        logger.debug(f"USER TOKEN ENCONTRADO (fallback .env): {user_token[:10]}...")
     else:
         # Not an error: `initialize` / `notifications/initialized` legitimately
         # carry no user token. Calls that actually need it fail later, explicitly.
