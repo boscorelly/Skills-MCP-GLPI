@@ -173,13 +173,20 @@ nano .env
 # .env
 GLPI_BASE_URL=https://your-glpi-server.com
 GLPI_APP_TOKEN=your_app_token_here
+GLPI_READ_ONLY=false
+
 MCP_PORT=8824
 MCP_HOST=0.0.0.0
 MCP_AUTH_TOKEN=your_secret_bearer_token_here   # leave empty to disable
-MCP_SAFETY_GUARD=true
-MCP_SAFETY_TOKEN=secure_token_min_8_chars
-RATE_LIMIT_REQUESTS_PER_MINUTE=500
+MCP_SAFETY_GUARD=false
+MCP_SAFETY_TOKEN=your_safety_token_here_min_8_chars
+
 LOG_LEVEL=INFO
+LOG_FILE=./logs/mcp-glpi.log
+
+CONNECTION_TIMEOUT=30
+REQUEST_TIMEOUT=60
+POOL_WORKERS=2
 ```
 
 ### Start the Server
