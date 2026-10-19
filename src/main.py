@@ -13,6 +13,8 @@ import re
 import uuid
 import uvicorn
 
+from fastapi import HTTPException
+
 from src import __version__
 from src.config import settings
 from src.logger import logger
@@ -62,6 +64,34 @@ app = FastAPI(
     version=__version__,
     lifespan=lifespan
 )
+
+
+@app.middleware("http")
+async def bearer_auth_middleware(request: Request, call_next):
+    """
+    Bearer token authentication middleware.
+    Protects all /mcp endpoints when MCP_AUTH_TOKEN is set.
+    /health is excluded to allow liveness probes without auth.
+    """
+    auth_token = settings.mcp_auth_token
+    if auth_token and request.url.path.startswith("/mcp"):
+        authorization = request.headers.get("Authorization", "")
+        if not authorization.startswith("Bearer "):
+            logger.warning(f"Missing Bearer token from {request.client.host}")
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=401,
+                content={"error": "unauthorized", "error_description": "Missing Bearer token"}
+            )
+        provided_token = authorization.removeprefix("Bearer ").strip()
+        if provided_token != auth_token:
+            logger.warning(f"Invalid Bearer token from {request.client.host}")
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=401,
+                content={"error": "invalid_token", "error_description": "Invalid or expired Bearer token"}
+            )
+    return await call_next(request)
 
 
 @app.get("/health", tags=["Health"])
